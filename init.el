@@ -1,23 +1,30 @@
-;; Keep custom-set-variables and friends out of my init.el
-(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
-
-(tool-bar-mode -1)
-(menu-bar-mode -1)
-(scroll-bar-mode -1)
-
-(setq make-backup-files nil) ; stop creating ~ files
-
-(add-to-list 'default-frame-alist '(font . "Iosevka-10.5"))
-
-(add-to-list 'exec-path "/usr/local/bin")
+(require 'package)
 
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 
-(setq package-check-signature nil)
+(package-initialize)
+(setq package-native-compile t)
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
 
-(add-to-list 'custom-theme-load-path (expand-file-name "/etc/nixos/dotfiles/themes/"))
+(setq use-package-always-ensure t)
 
-(setq custom-safe-themes t)
+(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+
+(use-package no-littering
+  :ensure t
+  :init
+  (setq auto-save-file-name-transforms
+    `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
+  (setq no-littering-etc-directory
+    (expand-file-name "config/" user-emacs-directory))
+  (setq no-littering-var-directory
+    (expand-file-name "data/" user-emacs-directory))
+  (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+  (unless (recentf-mode))
+  (add-to-list 'recentf-exclude no-littering-var-directory)
+  (add-to-list 'recentf-exclude no-littering-etc-directory))
 
 (defun zerodouglas/comment-paragraph ()
   (interactive)
@@ -26,8 +33,6 @@
     (comment-or-uncomment-region (region-beginning) (region-end))))
 
 (global-set-key (kbd "C-c c") 'zerodouglas/comment-paragraph)
-
-(require 'use-package)
 
 (defun eglot-format-buffer-on-save ()
   (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
@@ -38,8 +43,9 @@
 (global-set-key (kbd "<f4>") 'call-last-kbd-macro)
 
 (use-package emacs
-  :bind
-  ("C-x C-b" . ibuffer))
+  :custom
+  (delete-selection-mode t)
+  (show-paren-mode 1))
 
 (use-package which-key
   :init
@@ -160,27 +166,34 @@
   :defer t
   :mode ("\\.nix\\'" . nix-mode))
 
-(use-package orderless
+(use-package doom-themes
+  :config
+  (load-theme 'doom-wilmersdorf t))
+
+(use-package vertico
+  :ensure
   :init
-  (setq completion-styles '(orderless)
-    completion-category-defaults nil
-    orderless-skip-highlighting t
-    completion-category-overrides '((file (styles partial-completion)))))
+  (vertico-mode))
+
+(use-package orderless
+  :commands (orderless)
+  :custom (completion-styles '(orderless flex)))
 
 (use-package consult
   :ensure t
-  :config
+  :init
   (setq consult-preview-key nil)
   (recentf-mode)
   :bind
-  ("C-c r" . consult-recent-file)
-  ("C-c f" . consult-ripgrep)
-  ("C-c l" . consult-line)
-  ("C-c i" . consult-imenu)
-  ("C-c t" . gtags-find-tag)
-  ("C-x b" . consult-buffer))
-
-(load-theme `wilmersdorf t)
+  (:map global-map
+    ("C-c r" . consult-recent-file)
+    ("C-c f" . consult-ripgrep)
+    ("C-c l" . consult-line)
+    ("C-c i" . consult-imenu)
+    ("C-x b" . consult-buffer)
+    ("C-c x" . consult-complex-command))
+  (:map comint-mode-map
+    ("C-c C-l" . consult-history)))
 
 (defun zerodouglas/kill-current-buffer ()
   "Kill current buffer."
