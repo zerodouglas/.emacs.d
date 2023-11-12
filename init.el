@@ -89,25 +89,6 @@
  sentence-end-double-space nil
  kill-whole-line t)
 
- (use-package scala-mode
-  :interpreter ("scala" . scala-mode))
-
-(use-package sbt-mode
-  :commands sbt-start sbt-command
-  :config
-  ;; WORKAROUND: https://github.com/ensime/emacs-sbt-mode/issues/31
-  ;; allows using SPACE when in the minibuffer
-  (substitute-key-definition
-   'minibuffer-complete-word
-   'self-insert-command
-   minibuffer-local-completion-map)
-   ;; sbt-supershell kills sbt-mode:  https://github.com/hvesalai/emacs-sbt-mode/issues/152
-   (setq sbt:program-options '("-Dsbt.supershell=false")))
-
-(use-package elm-mode
-  :config
-  (setq elm-mode-hook '(elm-indent-simple-mode)))
-
 (use-package go-mode)
 
 (use-package haskell-mode
@@ -143,10 +124,6 @@
   :hook
   (haskell-mode . eglot-ensure)
   (go-mode . eglot-ensure)
-  (elm-mode . eglot-ensure)
-  (scala-mode . eglot-ensure)
-  :config
-  (push '(scala-mode "metals") eglot-server-programs)
   :custom
   (eglot-autoshutdown t)
   (eglot-autoreconnect nil)
@@ -172,13 +149,20 @@
   (defvar last-file-name-handler-alist nil)
   (vertico-mode))
 
+;; Don't need Puni
 (use-package puni
+  :disabled
   :ensure t
   :init
   (puni-global-mode)
   (electric-pair-mode)
   :bind
   ("C-." . puni-expand-region))
+
+(use-package paredit
+  :hook
+  (lisp-mode . paredit-mode)
+  (emacs-lisp-mode . paredit-mode))
 
 (use-package nix-mode
   :defer t
@@ -247,3 +231,10 @@ or the current line if there is no active region."
 	delete-by-moving-to-trash t)
   :bind* (:map dired-mode-map
 	       ("-" . zerodouglas/dired-up-directory)))
+
+;; Install Roswell
+(use-package sly
+  :config
+  (setq sly-default-lisp 'roswell
+    sly-lisp-implementations
+    `((roswell ("ros" "-Q" "run")))))
